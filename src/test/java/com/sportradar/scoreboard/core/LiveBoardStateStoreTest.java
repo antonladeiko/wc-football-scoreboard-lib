@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sportradar.scoreboard.api.MatchId;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class LiveBoardStateStoreTest {
@@ -12,13 +13,7 @@ class LiveBoardStateStoreTest {
     @Test
     void failedTransitionDoesNotPublishNewState() {
         LiveBoardStateStore store = new LiveBoardStateStore();
-
-        Match match = new Match(
-                MatchId.generate(),
-                new TeamName("Mexico"),
-                new TeamName("Canada"),
-                Score.INITIAL
-        );
+        Match match = match("Mexico", "Canada");
 
         store.update(state -> state.startMatch(match));
 
@@ -32,7 +27,10 @@ class LiveBoardStateStoreTest {
         );
 
         assertSame(before, store.snapshot());
-        assertEquals(1, store.snapshot().getSummary().size());
+        assertEquals(
+                List.of(match),
+                List.copyOf(store.snapshot().activeMatches())
+        );
     }
 
     @Test
@@ -51,10 +49,22 @@ class LiveBoardStateStoreTest {
     @Test
     void rejectsNullTransition() {
         LiveBoardStateStore store = new LiveBoardStateStore();
+        LiveBoardState before = store.snapshot();
 
         assertThrows(
                 NullPointerException.class,
                 () -> store.update(null)
+        );
+
+        assertSame(before, store.snapshot());
+    }
+
+    private static Match match(String home, String away) {
+        return new Match(
+                MatchId.generate(),
+                new TeamName(home),
+                new TeamName(away),
+                Score.INITIAL
         );
     }
 

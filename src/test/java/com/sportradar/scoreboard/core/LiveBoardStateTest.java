@@ -7,12 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sportradar.scoreboard.api.MatchId;
-import com.sportradar.scoreboard.api.MatchSnapshot;
 import com.sportradar.scoreboard.api.exceptions.MatchNotFoundException;
 import com.sportradar.scoreboard.api.exceptions.ScoreboardException;
 import com.sportradar.scoreboard.api.exceptions.TeamAlreadyPlayingException;
-import org.junit.jupiter.api.Test;
 import java.util.List;
+import org.junit.jupiter.api.Test;
 
 class LiveBoardStateTest {
 
@@ -22,35 +21,32 @@ class LiveBoardStateTest {
         Match match = match("Mexico", "Canada");
 
         LiveBoardState started = initial.startMatch(match);
-
         LiveBoardState updated = started.updateScore(
                 match.id(),
                 new Score(2, 1)
         );
-
         LiveBoardState finished = updated.finishMatch(match.id());
 
-        assertTrue(initial.getSummary().isEmpty());
-
-        assertEquals(
-                List.of(snapshot(match, 0, 0)),
-                started.getSummary()
+        assertAll(
+                () -> assertTrue(initial.activeMatches().isEmpty()),
+                () -> assertEquals(
+                        List.of(match),
+                        List.copyOf(started.activeMatches())
+                ),
+                () -> assertEquals(
+                        List.of(match.updateScore(new Score(2, 1))),
+                        List.copyOf(updated.activeMatches())
+                ),
+                () -> assertTrue(finished.activeMatches().isEmpty())
         );
-
-        assertEquals(
-                List.of(snapshot(match, 2, 1)),
-                updated.getSummary()
-        );
-
-        assertTrue(finished.getSummary().isEmpty());
     }
 
     @Test
     void updatingWithTheSameScoreReturnsTheSameState() {
         Match match = match("Mexico", "Canada");
 
-        LiveBoardState state =
-                LiveBoardState.initial().startMatch(match);
+        LiveBoardState state = LiveBoardState.initial()
+                .startMatch(match);
 
         assertSame(
                 state,
@@ -62,8 +58,8 @@ class LiveBoardStateTest {
     void duplicateIdIsRejectedWithoutChangingExistingState() {
         Match match = match("Mexico", "Canada");
 
-        LiveBoardState state =
-                LiveBoardState.initial().startMatch(match);
+        LiveBoardState state = LiveBoardState.initial()
+                .startMatch(match);
 
         assertThrows(
                 ScoreboardException.class,
@@ -71,8 +67,8 @@ class LiveBoardStateTest {
         );
 
         assertEquals(
-                List.of(snapshot(match, 0, 0)),
-                state.getSummary()
+                List.of(match),
+                List.copyOf(state.activeMatches())
         );
     }
 
@@ -80,8 +76,8 @@ class LiveBoardStateTest {
     void sharedTeamsAreRejectedRegardlessOfSide() {
         Match match = match("Mexico", "Canada");
 
-        LiveBoardState state =
-                LiveBoardState.initial().startMatch(match);
+        LiveBoardState state = LiveBoardState.initial()
+                .startMatch(match);
 
         assertAll(
                 () -> assertThrows(
@@ -99,8 +95,8 @@ class LiveBoardStateTest {
         );
 
         assertEquals(
-                List.of(snapshot(match, 0, 0)),
-                state.getSummary()
+                List.of(match),
+                List.copyOf(state.activeMatches())
         );
     }
 
@@ -123,7 +119,25 @@ class LiveBoardStateTest {
                 )
         );
 
-        assertTrue(state.getSummary().isEmpty());
+        assertTrue(state.activeMatches().isEmpty());
+    }
+
+    @Test
+    void activeMatchesCannotBeModifiedExternally() {
+        Match match = match("Mexico", "Canada");
+
+        LiveBoardState state = LiveBoardState.initial()
+                .startMatch(match);
+
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> state.activeMatches().clear()
+        );
+
+        assertEquals(
+                List.of(match),
+                List.copyOf(state.activeMatches())
+        );
     }
 
     private static Match match(String home, String away) {
@@ -132,20 +146,6 @@ class LiveBoardStateTest {
                 new TeamName(home),
                 new TeamName(away),
                 Score.INITIAL
-        );
-    }
-
-    private static MatchSnapshot snapshot(
-            Match match,
-            int home,
-            int away
-    ) {
-        return new MatchSnapshot(
-                match.id(),
-                match.homeTeam().displayName(),
-                match.awayTeam().displayName(),
-                home,
-                away
         );
     }
 

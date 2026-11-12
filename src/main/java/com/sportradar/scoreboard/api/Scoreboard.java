@@ -12,4 +12,6 @@ public interface Scoreboard {
 
     List<MatchSnapshot> getSummary();
 
+    List<MatchSnapshot> findByCriteria(MatchCriteria criteria);
+
 }

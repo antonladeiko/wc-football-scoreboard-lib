@@ -1,5 +1,6 @@
 package com.sportradar.scoreboard.core;
 
+import com.sportradar.scoreboard.api.MatchCriteria;
 import com.sportradar.scoreboard.api.MatchId;
 import com.sportradar.scoreboard.api.MatchSnapshot;
 import com.sportradar.scoreboard.api.Scoreboard;
@@ -46,8 +47,17 @@ public final class DefaultScoreboard implements Scoreboard {
 
     @Override
     public List<MatchSnapshot> getSummary() {
-        return stateStore.snapshot()
-                .getSummary();
+        return MatchResults.summary(
+            stateStore.snapshot().activeMatches()
+        );
+    }
+
+    @Override
+    public List<MatchSnapshot> findByCriteria(MatchCriteria criteria) {
+        return MatchResults.find(
+            stateStore.snapshot().activeMatches(),
+            criteria
+        );
     }
 
 }

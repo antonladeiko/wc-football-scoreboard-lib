@@ -1,14 +1,13 @@
 package com.sportradar.scoreboard.core;
 
 import com.sportradar.scoreboard.api.MatchId;
-import com.sportradar.scoreboard.api.MatchSnapshot;
 import com.sportradar.scoreboard.api.exceptions.MatchNotFoundException;
 import com.sportradar.scoreboard.api.exceptions.ScoreboardException;
 import com.sportradar.scoreboard.api.exceptions.TeamAlreadyPlayingException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.SequencedCollection;
 import java.util.SequencedMap;
 
 final class LiveBoardState {
@@ -66,12 +65,8 @@ final class LiveBoardState {
         return new LiveBoardState(liveMatches);
     }
 
-    List<MatchSnapshot> getSummary() {
-        return MatchResults.select(
-            activeMatches.sequencedValues(),
-            match -> true,
-            MatchOrdering.summary()
-        );
+    SequencedCollection<Match> activeMatches() {
+        return activeMatches.sequencedValues();
     }
 
     private boolean isAnyTeamPlaying(Match candidate) {
